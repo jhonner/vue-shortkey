@@ -5,6 +5,11 @@ let mapFunctions = {}
 let objAvoided = []
 let elementAvoided = []
 let keyPressed = false
+let enabled = true
+
+const setEnabled = (value) => {
+	enabled = value
+}
 
 const parseValue = (value) => {
   value = typeof value === 'string' ? JSON.parse(value.replace(/\'/gi, '"')) : value
@@ -44,6 +49,12 @@ const unbindValue = (value, el) => {
 ShortKey.install = (Vue, options) => {
   elementAvoided = [...(options && options.prevent ? options.prevent : [])]
   Vue.directive('shortkey', {
+  	enable: () => {
+  		setEnabled(true)
+  	},
+  	disable: () => {
+  		setEnabled(false)
+  	},
     bind: (el, binding, vnode) => {
       // Mapping the commands
       const value = parseValue(binding.value)
@@ -125,32 +136,36 @@ ShortKey.keyDown = (pKey) => {
 if (process && process.env && process.env.NODE_ENV !== 'test') {
   ;(function () {
     document.addEventListener('keydown', (pKey) => {
-      const decodedKey = ShortKey.decodeKey(pKey)
-      // Check avoidable elements
-      if (availableElement(decodedKey)) {
-        pKey.preventDefault()
-        pKey.stopPropagation()
-        if (mapFunctions[decodedKey].focus) {
-          ShortKey.keyDown(decodedKey)
-          keyPressed = true
-        } else if (!keyPressed) {
-          const elm = mapFunctions[decodedKey].el
-          elm[elm.length - 1].focus()
-          keyPressed = true
+      if(enabled === true) {
+        const decodedKey = ShortKey.decodeKey(pKey)
+        // Check avoidable elements
+        if (availableElement(decodedKey)) {
+          pKey.preventDefault()
+          pKey.stopPropagation()
+          if (mapFunctions[decodedKey].focus) {
+            ShortKey.keyDown(decodedKey)
+            keyPressed = true
+          } else if (!keyPressed) {
+            const elm = mapFunctions[decodedKey].el
+            elm[elm.length - 1].focus()
+            keyPressed = true
+          }
         }
       }
     }, true)
 
     document.addEventListener('keyup', (pKey) => {
-      const decodedKey = ShortKey.decodeKey(pKey)
-      if (availableElement(decodedKey)) {
-        pKey.preventDefault()
-        pKey.stopPropagation()
-        if (mapFunctions[decodedKey].once || mapFunctions[decodedKey].push) {
-          dispatchShortkeyEvent(decodedKey);
+      if(enabled === true) {
+        const decodedKey = ShortKey.decodeKey(pKey)
+        if (availableElement(decodedKey)) {
+          pKey.preventDefault()
+          pKey.stopPropagation()
+          if (mapFunctions[decodedKey].once || mapFunctions[decodedKey].push) {
+            dispatchShortkeyEvent(decodedKey);
+          }
         }
+        keyPressed = false
       }
-      keyPressed = false
     }, true)
   })()
 }
